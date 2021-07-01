@@ -21,10 +21,10 @@ import com.akkaserverless.javasdk.impl.MetadataImpl
 import com.akkaserverless.javasdk.reply.{ForwardReply, MessageReply}
 import com.akkaserverless.protocol.component
 import com.google.protobuf.any.{Any => ScalaPbAny}
-import com.google.protobuf.{Any => JavaPbAny}
-import scala.jdk.CollectionConverters._
+import com.google.protobuf.{GeneratedMessage, Any => JavaPbAny}
 
-import com.akkaserverless.javasdk.SideEffect
+import scala.jdk.CollectionConverters._
+import com.akkaserverless.javasdk.{Effect, SideEffect}
 
 object ReplySupport {
   private def asProtocol(metadata: javasdk.Metadata): Option[component.Metadata] =
@@ -69,5 +69,4 @@ object ReplySupport {
     }
     encodedEffects
   }
-
 }
