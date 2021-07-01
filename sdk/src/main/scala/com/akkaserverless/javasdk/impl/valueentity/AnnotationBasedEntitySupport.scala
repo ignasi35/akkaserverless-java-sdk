@@ -21,10 +21,10 @@ import com.akkaserverless.javasdk.impl.EntityExceptions.EntityException
 import com.akkaserverless.javasdk.impl.ReflectionHelper.{InvocationContext, MainArgumentParameterHandler}
 import com.akkaserverless.javasdk.impl.{AnySupport, ReflectionHelper, ResolvedEntityFactory, ResolvedServiceMethod}
 import com.akkaserverless.javasdk.{Metadata, Reply, ServiceCall, ServiceCallFactory}
-import com.google.protobuf.{Descriptors, Any => JavaPbAny}
+import com.google.protobuf.{Descriptors, any, Any => JavaPbAny}
+
 import java.lang.reflect.{Constructor, InvocationTargetException}
 import java.util.Optional
-
 import com.akkaserverless.javasdk.lowlevel.ValueEntityFactory
 import com.akkaserverless.javasdk.lowlevel.ValueEntityHandler
 import com.akkaserverless.javasdk.valueentity._
@@ -64,7 +64,12 @@ private[impl] class AnnotationBasedEntitySupport(
       })
     }
 
-    override def handleCommand(command: JavaPbAny, context: CommandContext[JavaPbAny]): Reply[JavaPbAny] = unwrap {
+    // FIXME the annotation-based implementation is going away before we release anyway
+    override def emptyState(): any.Any = null
+
+    override def handleCommand(command: JavaPbAny,
+                               state: JavaPbAny,
+                               context: CommandContext[JavaPbAny]): Reply[JavaPbAny] = unwrap {
       behavior.commandHandlers.get(context.commandName()).map { handler =>
         val adaptedContext =
           new AdaptedCommandContext[AnyRef](context, anySupport)

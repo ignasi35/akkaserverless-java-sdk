@@ -45,11 +45,8 @@ public class CustomerValueEntity extends CustomerValueEntityInterface {
       CustomerApi.ChangeNameRequest request,
       CustomerDomain.CustomerState currentState,
       CommandContext<CustomerDomain.CustomerState> context) {
-    if (currentState.getCustomerId())
-      return effects().failure("Customer must be created before name can be changed.");
-
     CustomerDomain.CustomerState updatedState =
-        currentState.get().toBuilder().setName(request.getNewName()).build();
+        currentState.toBuilder().setName(request.getNewName()).build();
     return effects().updateState(updatedState).thenReply(Empty.getDefaultInstance());
   }
 

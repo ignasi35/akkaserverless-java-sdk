@@ -115,14 +115,18 @@ final class ValueEntitiesImpl(_system: ActorSystem,
     val handler = service.factory.create(new EntityContextImpl(init.entityId))
     val thisEntityId = init.entityId
 
-    val initState = init.state match {
-      case Some(ValueEntityInitState(state, _)) => state
-      case _ => None // should not happen!!!
+    val initState: ScalaPbAny = init.state match {
+      case Some(ValueEntityInitState(stateOpt, _)) =>
+        stateOpt match {
+          case Some(state) => state
+          case None => handler.emptyState()
+        }
+      case None => throw new IllegalStateException("ValueEntityInit state is mandatory")
     }
 
     Flow[ValueEntityStreamIn]
       .map(_.message)
-      .scan[(Option[ScalaPbAny], Option[ValueEntityStreamOut.Message])]((initState, None)) {
+      .scan[(ScalaPbAny, Option[ValueEntityStreamOut.Message])]((initState, None)) {
         case (_, InCommand(command)) if thisEntityId != command.entityId =>
           throw ProtocolException(command, "Receiving Value entity is not the intended recipient of command")
 
@@ -137,12 +141,13 @@ final class ValueEntitiesImpl(_system: ActorSystem,
             command.name,
             command.id,
             metadata,
-            state,
+            // Slight behavior change, but this API is deprecated and probably goes away before we merge
+            Some(state),
             service.anySupport,
             log
           )
           val reply: Reply[JavaPbAny] = try {
-            handler.handleCommand(cmd, context)
+            handler.handleCommand(cmd, ScalaPbAny.toJavaProto(state), context)
           } catch {
             case FailInvoked => Reply.noReply() //Option.empty[JavaPbAny].asJava
             case e: EntityException => throw e
@@ -159,7 +164,8 @@ final class ValueEntitiesImpl(_system: ActorSystem,
 
           val clientAction = context.replyToClientAction(reply, allowNoReply = false, restartOnFailure = false)
           if (!context.hasError && !reply.isInstanceOf[ErrorReply[_]]) {
-            val nextState = context.currentState()
+            // TODO get the new state from the effect rather than from the context
+            val nextState = context.currentState().get
             (nextState,
              Some(
                OutReply(
